@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ASSET_DB_URL")
+}
+
+// Kept as an enum (not a single hardcoded value) so additional roles
+// (Technician, Auditor, Asset Manager, etc.) can be introduced later
+// without a schema migration that changes column type.
+enum Role {
+  ADMIN
+}
+
+enum AssetType {
+  FIXED
+  ELECTRONIC
+}
+
+enum AssetStatus {
+  GOOD
+  REQUIRES_MAINTENANCE
+  UNDER_REPAIR
+  UNSERVICEABLE
+  DISPOSED
+}
+
+enum MovementType {
+  INBOUND
+  OUTBOUND
+  CHECKOUT
+  CHECKIN
+  TRANSFER
+}
+
+enum AttachmentType {
+  PHOTO
+  INVOICE
+  OTHER
+}
+
+enum MatchStatus {
+  MATCHED
+  MISMATCH
+  NOT_FOUND
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String
+  users     User[]
+  assets    Asset[]
+  createdAt DateTime @default(now())
+
+  @@map("departments")
+}
+
+model Location {
+  id       String  @id @default(uuid())
+  building String?
+  floor    String?
+  room     String
+
+  assets                 Asset[]
+  movementsFrom           AssetMovement[] @relation("MovementFromLocation")
+  movementsTo             AssetMovement[] @relation("MovementToLocation")
+  auditItemsExpected      AuditItem[]     @relation("ExpectedLocation")
+  auditItemsScanned       AuditItem[]     @relation("ScannedLocation")
+
+  @@map("locations")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(ADMIN)
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  createdAt    DateTime @default(now())
+
+  heldAssets        Asset[]           @relation("CurrentHolder")
+  movementsFrom     AssetMovement[]   @relation("MovementFromUser")
+  movementsTo       AssetMovement[]   @relation("MovementToUser")
+  movementsProcessed AssetMovement[]  @relation("MovementProcessedBy")
+  maintenanceLogs   MaintenanceLog[]  @relation("LoggedBy")
+  attachments       AssetAttachment[] @relation("UploadedBy")
+  auditsCreated     Audit[]           @relation("AuditCreatedBy")
+  auditItemsScanned AuditItem[]       @relation("ScannedBy")
+  notifications     Notification[]    @relation("NotificationTarget")
+
+  @@map("users")
+}
+
+model AssetCategory {
+  id        String    @id @default(uuid())
+  name      String
+  assetType AssetType
+  assets    Asset[]
+
+  @@map("asset_categories")
+}
+
+model Asset {
+  id              String    @id @default(uuid())
+  assetCode       String    @unique
+  name            String
+  category        AssetCategory @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  assetType       AssetType
+  brand           String?
+  serialNumber    String?
+  specifications  Json?
+  purchaseDate    DateTime?
+  purchaseCost    Decimal?  @db.Decimal(12, 2)
+  warrantyExpiry  DateTime?
+  location        Location? @relation(fields: [locationId], references: [id])
+  locationId      String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  departmentId    String?
+  currentHolder   User?     @relation("CurrentHolder", fields: [currentHolderId], references: [id])
+  currentHolderId String?
+  status          AssetStatus @default(GOOD)
+  qrImageUrl      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  movements             AssetMovement[]
+  maintenanceSchedules  MaintenanceSchedule[]
+  maintenanceLogs       MaintenanceLog[]
+  attachments           AssetAttachment[]
+  auditItems            AuditItem[]
+  notifications         Notification[]
+  depreciation          DepreciationRecord?
+
+  @@map("assets")
+}
+
+model AssetMovement {
+  id              String   @id @default(uuid())
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  assetId         String
+  movementType    MovementType
+  fromLocation    Location? @relation("MovementFromLocation", fields: [fromLocationId], references: [id])
+  fromLocationId  String?
+  toLocation      Location? @relation("MovementToLocation", fields: [toLocationId], references: [id])
+  toLocationId    String?
+  fromUser        User?    @relation("MovementFromUser", fields: [fromUserId], references: [id])
+  fromUserId      String?
+  toUser          User?    @relation("MovementToUser", fields: [toUserId], references: [id])
+  toUserId        String?
+  processedBy     User?    @relation("MovementProcessedBy", fields: [processedById], references: [id])
+  processedById   String?
+  movementDate    DateTime @default(now())
+  notes           String?
+
+  @@map("asset_movements")
+}
+
+model MaintenanceSchedule {
+  id              String   @id @default(uuid())
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  assetId         String
+  intervalMonths  Int
+  lastServiceDate DateTime?
+  nextDueDate     DateTime
+  isActive        Boolean  @default(true)
+
+  logs MaintenanceLog[]
+
+  @@map("maintenance_schedules")
+}
+
+model MaintenanceLog {
+  id            String   @id @default(uuid())
+  asset         Asset    @relation(fields: [assetId], references: [id])
+  assetId       String
+  schedule      MaintenanceSchedule? @relation(fields: [scheduleId], references: [id])
+  scheduleId    String?
+  serviceDate   DateTime
+  vendorName    String?
+  technicianName String?
+  partsReplaced String?
+  cost          Decimal? @db.Decimal(12, 2)
+  notes         String?
+  loggedBy      User?    @relation("LoggedBy", fields: [loggedById], references: [id])
+  loggedById    String?
+  createdAt     DateTime @default(now())
+
+  @@map("maintenance_logs")
+}
+
+model AssetAttachment {
+  id           String        @id @default(uuid())
+  asset        Asset         @relation(fields: [assetId], references: [id])
+  assetId      String
+  fileUrl      String
+  fileType     AttachmentType
+  uploadedBy   User?         @relation("UploadedBy", fields: [uploadedById], references: [id])
+  uploadedById String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+
+  @@map("asset_attachments")
+}
+
+model Notification {
+  id              String   @id @default(uuid())
+  targetUser      User?    @relation("NotificationTarget", fields: [targetUserId], references: [id])
+  targetUserId    String?
+  title           String
+  message         String
+  relatedAsset    Asset?   @relation(fields: [relatedAssetId], references: [id])
+  relatedAssetId  String?
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Audit {
+  id          String   @id @default(uuid())
+  name        String
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("IN_PROGRESS")
+  createdBy   User?    @relation("AuditCreatedBy", fields: [createdById], references: [id])
+  createdById String?
+
+  items AuditItem[]
+
+  @@map("audits")
+}
+
+model AuditItem {
+  id                  String   @id @default(uuid())
+  audit               Audit    @relation(fields: [auditId], references: [id])
+  auditId             String
+  asset               Asset    @relation(fields: [assetId], references: [id])
+  assetId             String
+  expectedLocation    Location? @relation("ExpectedLocation", fields: [expectedLocationId], references: [id])
+  expectedLocationId  String?
+  scannedLocation     Location? @relation("ScannedLocation", fields: [scannedLocationId], references: [id])
+  scannedLocationId   String?
+  scannedAt           DateTime?
+  scannedBy           User?    @relation("ScannedBy", fields: [scannedById], references: [id])
+  scannedById         String?
+  conditionStatus     AssetStatus?
+  matchStatus         MatchStatus?
+  notes               String?
+
+  @@map("audit_items")
+}
+
+model DepreciationRecord {
+  id                 String   @id @default(uuid())
+  asset              Asset    @relation(fields: [assetId], references: [id])
+  assetId            String   @unique
+  method             String   @default("STRAIGHT_LINE")
+  usefulLifeYears    Int?
+  salvageValue       Decimal? @db.Decimal(12, 2)
+  annualDepreciation Decimal? @db.Decimal(12, 2)
+  bookValue          Decimal? @db.Decimal(12, 2)
+  asOfDate           DateTime?
+
+  @@map("depreciation_records")
+}
