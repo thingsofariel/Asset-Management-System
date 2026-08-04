@@ -1,16 +1,29 @@
-# Office Asset & Inventory Management System — Phase 0
+# Office Asset & Inventory Management System — Phases 0–2
 
-Foundation scaffold: repo structure, database schema, authentication, and a base dashboard shell.
 See `ARCHITECTURE_AND_SCHEMA_PLAN.md` for the full system design and phased roadmap.
 
-## What's included in Phase 0
+## What's included so far
 
-- Full Prisma schema for every module (assets, movements, maintenance, audits, attachments,
-  notifications, depreciation) — only Users/Auth are wired up to endpoints yet.
-- JWT authentication (`POST /api/auth/login`) and a `RolesGuard` ready for when more roles
-  are introduced (v1 uses a single Admin role, per your sign-off).
-- Basic user management endpoints.
-- Next.js app shell: login page and a dashboard placeholder showing the module roadmap.
+**Phase 0 — Foundation:** full Prisma schema for every module, JWT authentication, base
+dashboard shell, `RolesGuard` ready for future roles.
+
+**Phase 1 — Asset Management:**
+- Categories, Locations, Departments (simple CRUD, managed from `/settings`)
+- Assets: full CRUD, search/filter by name/code/serial, category/status filters
+- QR code auto-generated on asset creation (`GET /assets/code/:assetCode` for scan lookups)
+- Label printing: select assets on `/assets` → `/assets/print` → browser print dialog
+- Attachments: photo/invoice upload per asset, stored locally under `backend/uploads/`
+
+**Phase 2 — Maintenance & Notifications:**
+- Maintenance schedules per asset (interval in months, auto-computed next due date)
+- Service log entries — logging a service rolls the schedule forward and resets asset
+  status to "Good"
+- Daily cron (8am) creates in-app notifications 7 and 3 days before each due date
+- Notification bell in the header; `/maintenance` page lists all schedules with
+  overdue/due-soon highlighting, plus a "Run Alert Check Now" button to test the alert
+  logic without waiting for the cron
+
+No new database migration is needed for these — the schema was fully designed in Phase 0.
 
 ## Prerequisites
 
@@ -60,7 +73,7 @@ asset-management-system/
     └── lib/
 ```
 
-## Next steps (Phase 1)
+## Next steps (Phase 3)
 
-Asset Management module: CRUD for assets/categories/locations, QR code generation on asset
-creation, and the label-printing screen. Confirm you're happy with Phase 0 before that starts.
+Asset Movement & Circulation: inbound/procurement logging, outbound/disposal, and
+check-in/check-out/transfer with accountability logs for the current holder.
