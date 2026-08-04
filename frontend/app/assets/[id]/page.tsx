@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Printer, Upload, Wrench, Trash2, Pencil } from 'lucide-react';
+import { Printer, Upload, Wrench, Trash2, Pencil, ArrowLeftRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
 import {
@@ -14,6 +14,8 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
   AssetStatus,
+  Movement,
+  AppUser,
 } from '@/lib/types';
 
 const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api').replace('/api', '');
@@ -165,8 +167,9 @@ export default function AssetDetailPage() {
             )}
           </div>
 
-          {/* Right column: attachments + maintenance */}
+          {/* Right column: movements + attachments + maintenance */}
           <div className="lg:col-span-2 space-y-6">
+            <MovementsSection asset={asset} locations={locations} onChange={load} />
             <AttachmentsSection assetId={asset.id} attachments={asset.attachments ?? []} onChange={load} />
             <MaintenanceSection
               assetId={asset.id}
@@ -596,6 +599,174 @@ function MaintenanceSection({
         </ul>
       ) : (
         <p className="text-sm text-muted">No service history yet.</p>
+      )}
+    </div>
+  );
+}
+
+function MovementsSection({
+  asset,
+  locations,
+  onChange,
+}: {
+  asset: Asset;
+  locations: Location[];
+  onChange: () => void;
+}) {
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [history, setHistory] = useState<Movement[]>([]);
+  const [action, setAction] = useState<'CHECKOUT' | 'TRANSFER' | null>(null);
+  const [targetId, setTargetId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get('/users').then((res) => setUsers(res.data));
+    api.get('/movements', { params: { assetId: asset.id } }).then((res) => setHistory(res.data));
+  }, [asset.id]);
+
+  async function runMovement(movementType: string, extra: Record<string, string | undefined> = {}) {
+    setSaving(true);
+    try {
+      await api.post('/movements', { assetId: asset.id, movementType, notes: notes || undefined, ...extra });
+      setNotes('');
+      setAction(null);
+      setTargetId('');
+      onChange();
+      api.get('/movements', { params: { assetId: asset.id } }).then((res) => setHistory(res.data));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function checkIn() {
+    await runMovement('CHECKIN');
+  }
+
+  async function dispose() {
+    if (!confirm('Mark this asset as disposed / written off? This cannot be undone from here.')) return;
+    await runMovement('OUTBOUND');
+  }
+
+  async function submitAction(e: React.FormEvent) {
+    e.preventDefault();
+    if (!targetId) return;
+    if (action === 'CHECKOUT') await runMovement('CHECKOUT', { toUserId: targetId });
+    if (action === 'TRANSFER') await runMovement('TRANSFER', { toLocationId: targetId });
+  }
+
+  const isCheckedOut = !!asset.currentHolderId;
+
+  return (
+    <div className="bg-surface border border-border rounded-lg p-5">
+      <h2 className="font-display font-medium text-primary mb-3">Movement & Circulation</h2>
+
+      <div className="flex items-center justify-between bg-bg rounded-md p-3 mb-4">
+        <div className="text-sm">
+          <p className="text-muted">Current Holder</p>
+          <p className="font-medium">
+            {isCheckedOut ? users.find((u) => u.id === asset.currentHolderId)?.name ?? 'Assigned' : 'Unassigned (in storage)'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {isCheckedOut ? (
+            <button
+              onClick={checkIn}
+              disabled={saving}
+              className="bg-primary text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition disabled:opacity-50"
+            >
+              Check In
+            </button>
+          ) : (
+            <button
+              onClick={() => setAction(action === 'CHECKOUT' ? null : 'CHECKOUT')}
+              className="flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition"
+            >
+              <ArrowLeftRight className="w-4 h-4" /> Check Out
+            </button>
+          )}
+          <button
+            onClick={() => setAction(action === 'TRANSFER' ? null : 'TRANSFER')}
+            className="bg-surface border border-border px-3 py-2 rounded-md text-sm hover:border-accent transition"
+          >
+            Transfer
+          </button>
+          {asset.status !== 'DISPOSED' && (
+            <button
+              onClick={dispose}
+              className="bg-surface border border-border text-status-repair px-3 py-2 rounded-md text-sm hover:border-status-repair transition"
+            >
+              Dispose
+            </button>
+          )}
+        </div>
+      </div>
+
+      {action && (
+        <form onSubmit={submitAction} className="border border-border rounded-md p-4 mb-4 space-y-3">
+          {action === 'CHECKOUT' ? (
+            <div>
+              <label className="block text-xs text-muted mb-1">Assign to</label>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                className="w-full rounded-md border border-border px-3 py-2 text-sm bg-surface"
+              >
+                <option value="">Select person</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs text-muted mb-1">New location</label>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                className="w-full rounded-md border border-border px-3 py-2 text-sm bg-surface"
+              >
+                <option value="">Select location</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.room}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-muted mb-1">Notes (optional)</label>
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving || !targetId}
+            className="bg-primary text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Confirm'}
+          </button>
+        </form>
+      )}
+
+      {history.length > 0 && (
+        <>
+          <h3 className="text-sm font-medium text-primary mb-2">History</h3>
+          <ul className="space-y-2">
+            {history.slice(0, 5).map((m) => (
+              <li key={m.id} className="text-sm border-t border-border pt-2 flex justify-between">
+                <span>{m.movementType}</span>
+                <span className="text-muted">{new Date(m.movementDate).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

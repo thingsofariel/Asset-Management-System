@@ -11,6 +11,9 @@ const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/assets', label: 'Assets' },
   { href: '/maintenance', label: 'Maintenance' },
+  { href: '/movements', label: 'Movements' },
+  { href: '/audits', label: 'Audits' },
+  { href: '/reports', label: 'Reports' },
   { href: '/settings', label: 'Settings' },
 ];
 

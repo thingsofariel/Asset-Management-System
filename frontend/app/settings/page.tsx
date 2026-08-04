@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
-import { Category, Location, Department } from '@/lib/types';
+import { Category, Location, Department, AppUser } from '@/lib/types';
 
-type Tab = 'categories' | 'locations' | 'departments';
+type Tab = 'categories' | 'locations' | 'departments' | 'users';
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('categories');
@@ -18,7 +18,7 @@ export default function SettingsPage() {
         <h1 className="font-display font-bold text-2xl text-primary mb-6">Settings</h1>
 
         <div className="flex gap-1 mb-6 border-b border-border">
-          {(['categories', 'locations', 'departments'] as Tab[]).map((t) => (
+          {(['categories', 'locations', 'departments', 'users'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -34,6 +34,7 @@ export default function SettingsPage() {
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'locations' && <LocationsTab />}
         {tab === 'departments' && <DepartmentsTab />}
+        {tab === 'users' && <UsersTab />}
       </div>
     </main>
   );
@@ -215,6 +216,81 @@ function DepartmentsTab() {
           </li>
         ))}
         {items.length === 0 && <p className="text-sm text-muted py-2">No departments yet.</p>}
+      </ul>
+    </div>
+  );
+}
+
+function UsersTab() {
+  const [items, setItems] = useState<AppUser[]>([]);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function load() {
+    api.get('/users').then((res) => setItems(res.data));
+  }
+  useEffect(load, []);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!name || !email || password.length < 8) {
+      setError('Name, email, and an 8+ character password are required.');
+      return;
+    }
+    try {
+      await api.post('/users', { name, email, password });
+      setName('');
+      setEmail('');
+      setPassword('');
+      load();
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Could not add person.');
+    }
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-lg p-5">
+      <p className="text-xs text-muted mb-3">
+        People added here can be selected as asset holders when checking out equipment. They
+        aren't required to log in to the system.
+      </p>
+      <form onSubmit={add} className="flex flex-wrap gap-2 mb-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Full name"
+          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
+        />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
+        />
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          placeholder="Temp password (8+ chars)"
+          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
+        />
+        <button className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-md text-sm">
+          <Plus className="w-4 h-4" /> Add
+        </button>
+      </form>
+      {error && <p className="text-sm text-status-repair mb-2">{error}</p>}
+      <ul className="divide-y divide-border">
+        {items.map((u) => (
+          <li key={u.id} className="flex items-center justify-between py-2 text-sm">
+            <span>
+              {u.name} <span className="text-muted">({u.email})</span>
+            </span>
+          </li>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted py-2">No one added yet.</p>}
       </ul>
     </div>
   );

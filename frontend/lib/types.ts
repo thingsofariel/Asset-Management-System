@@ -100,3 +100,72 @@ export const STATUS_COLORS: Record<AssetStatus, string> = {
   UNSERVICEABLE: 'text-status-scrap bg-status-scrap/10',
   DISPOSED: 'text-status-scrap bg-status-scrap/10',
 };
+
+export type MovementType = 'INBOUND' | 'OUTBOUND' | 'CHECKOUT' | 'CHECKIN' | 'TRANSFER';
+
+export interface Movement {
+  id: string;
+  assetId: string;
+  asset?: { id: string; name: string; assetCode: string };
+  movementType: MovementType;
+  fromLocation?: Location | null;
+  toLocation?: Location | null;
+  fromUser?: { id: string; name: string } | null;
+  toUser?: { id: string; name: string } | null;
+  notes?: string | null;
+  movementDate: string;
+}
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export type MatchStatus = 'MATCHED' | 'MISMATCH' | 'NOT_FOUND';
+
+export interface AuditItem {
+  id: string;
+  assetId: string;
+  asset?: { id: string; name: string; assetCode: string };
+  expectedLocation?: Location | null;
+  scannedLocation?: Location | null;
+  scannedAt?: string | null;
+  conditionStatus?: AssetStatus | null;
+  matchStatus?: MatchStatus | null;
+  notes?: string | null;
+}
+
+export interface Audit {
+  id: string;
+  name: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+  items?: AuditItem[];
+  _count?: { items: number };
+}
+
+export interface DashboardSummary {
+  totalAssets: number;
+  byStatus: Record<string, number>;
+  damagedCount: number;
+  upcomingMaintenance: number;
+  totalAttachments: number;
+}
+
+export interface DepreciationRow {
+  assetId: string;
+  name: string;
+  assetCode: string;
+  purchaseCost: number;
+  usefulLifeYears: number;
+  annualDepreciation: number;
+  bookValue: number;
+}
+
+export interface MaintenanceCostRow {
+  month: string;
+  total: number;
+}

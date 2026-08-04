@@ -12,6 +12,9 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { MovementsModule } from './movements/movements.module';
+import { AuditsModule } from './audits/audits.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -28,7 +31,9 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     MaintenanceModule,
     NotificationsModule,
     SchedulerModule,
-    // MovementsModule, AuditsModule, ReportsModule — added in Phases 3–5
+    MovementsModule,
+    AuditsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

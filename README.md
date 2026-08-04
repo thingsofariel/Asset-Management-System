@@ -1,29 +1,42 @@
-# Office Asset & Inventory Management System — Phases 0–2
+# Office Asset & Inventory Management System — All 5 Phases
 
-See `ARCHITECTURE_AND_SCHEMA_PLAN.md` for the full system design and phased roadmap.
+See `ARCHITECTURE_AND_SCHEMA_PLAN.md` for the full system design.
 
-## What's included so far
+## What's included
 
-**Phase 0 — Foundation:** full Prisma schema for every module, JWT authentication, base
-dashboard shell, `RolesGuard` ready for future roles.
+**Phase 0 — Foundation:** full Prisma schema, JWT authentication, dashboard shell.
 
-**Phase 1 — Asset Management:**
-- Categories, Locations, Departments (simple CRUD, managed from `/settings`)
-- Assets: full CRUD, search/filter by name/code/serial, category/status filters
-- QR code auto-generated on asset creation (`GET /assets/code/:assetCode` for scan lookups)
-- Label printing: select assets on `/assets` → `/assets/print` → browser print dialog
-- Attachments: photo/invoice upload per asset, stored locally under `backend/uploads/`
+**Phase 1 — Asset Management:** categories/locations/departments (`/settings`), full asset
+CRUD with search/filter, QR code auto-generation, single/bulk label printing, photo & invoice
+attachments.
 
-**Phase 2 — Maintenance & Notifications:**
-- Maintenance schedules per asset (interval in months, auto-computed next due date)
-- Service log entries — logging a service rolls the schedule forward and resets asset
-  status to "Good"
-- Daily cron (8am) creates in-app notifications 7 and 3 days before each due date
-- Notification bell in the header; `/maintenance` page lists all schedules with
-  overdue/due-soon highlighting, plus a "Run Alert Check Now" button to test the alert
-  logic without waiting for the cron
+**Phase 2 — Maintenance & Notifications:** recurring schedules, service logs that roll the
+schedule forward automatically, daily 8am alert cron (7/3 days before due), notification bell,
+`/maintenance` overview with a manual test trigger.
 
-No new database migration is needed for these — the schema was fully designed in Phase 0.
+**Phase 3 — Movement & Circulation:** from each asset's detail page — Check-Out (assign to a
+person, added under Settings → Users), Check-In, Transfer (between locations), and Dispose.
+Every action is logged with who processed it. `/movements` shows the full accountability log
+across all assets.
+
+**Phase 4 — Physical Audit:** `/audits` → start a new audit (snapshots every active asset's
+expected location) → `/audits/[id]/scan` opens a mobile-first camera view (uses your phone's
+camera via `html5-qrcode`) to scan QR labels in the field. Each scan is checked against the
+asset's expected location (Matched / Mismatch), and completing an audit flags anything never
+scanned as Not Found.
+
+**Phase 5 — Reporting:** the dashboard now shows live totals (asset count, damaged/under-repair
+count, service due in 30 days). `/reports` adds a maintenance cost chart and a straight-line
+depreciation estimate (10yr default for fixed assets, 4yr for electronics — clearly labeled as
+an estimate, not an accounting record).
+
+No new database migration is needed for any of this — the schema was fully designed in Phase 0.
+
+## A note on the audit scan camera
+
+`html5-qrcode` needs an HTTPS context (or `localhost`) to access the camera — `localhost:3000`
+in dev is fine. Your browser will prompt for camera permission the first time you open a scan
+page; if you accidentally deny it, you'll need to re-allow it in your browser's site settings.
 
 ## Prerequisites
 
@@ -73,7 +86,12 @@ asset-management-system/
     └── lib/
 ```
 
-## Next steps (Phase 3)
+## Optional follow-ups
 
-Asset Movement & Circulation: inbound/procurement logging, outbound/disposal, and
-check-in/check-out/transfer with accountability logs for the current holder.
+Everything from the original spec is now built. A few things worth considering if you want to
+keep going:
+- A dedicated "change password" screen for the seeded Admin account
+- Per-category useful-life configuration for depreciation, instead of the fixed 10yr/4yr default
+- A responsive mobile nav (the header nav currently hides below `sm` breakpoint outside the
+  audit scan view, which was built mobile-first on purpose)
+- Deploying somewhere beyond local dev, once you're ready
