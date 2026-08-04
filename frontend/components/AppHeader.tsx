@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
@@ -16,7 +17,11 @@ const navLinks = [
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const user = getStoredUser();
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
 
   function handleLogout() {
     clearSession();
