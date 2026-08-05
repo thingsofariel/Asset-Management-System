@@ -27,7 +27,7 @@ export default function ReportsPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display font-medium text-primary">Maintenance Cost Analysis</h2>
-            <p className="text-sm text-muted">Total: ${totalCost.toFixed(2)}</p>
+            <p className="text-sm text-muted">Total: IDR Rp{totalCost.toFixed(2)}</p>
           </div>
           <div className="bg-surface border border-border rounded-lg p-5">
             {costs.length > 0 ? (
