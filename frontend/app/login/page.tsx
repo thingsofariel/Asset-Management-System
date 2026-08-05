@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2 mb-1 text-primary">
           <ScanLine className="w-5 h-5 text-accent" strokeWidth={2.5} />
           <span className="font-display font-medium text-sm tracking-wide uppercase text-muted">
-            Asset & Inventory
+            Assets & Inventory
           </span>
         </div>
         <h1 className="font-display font-bold text-2xl text-primary mb-6">Sign in</h1>
