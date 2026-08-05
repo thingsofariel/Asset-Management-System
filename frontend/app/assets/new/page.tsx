@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ImagePlus, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
 import { Category, Location, Department } from '@/lib/types';
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function NewAssetPage() {
   const router = useRouter();
@@ -14,6 +17,10 @@ export default function NewAssetPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -36,11 +43,44 @@ export default function NewAssetPage() {
     api.get('/departments').then((res) => setDepartments(res.data));
   }, []);
 
+  // Revoke the preview URL when it's replaced or the page unmounts, to avoid leaking memory.
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
   const isElectronic = selectedCategory?.assetType === 'ELECTRONIC';
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file after removing it
+    if (!file) return;
+
+    setImageError(null);
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please choose an image file.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setImageError(`That image is ${(file.size / (1024 * 1024)).toFixed(1)}MB — the limit is 10MB.`);
+      return;
+    }
+
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  function removeImage() {
+    setImage(null);
+    setImagePreview(null);
+    setImageError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -72,6 +112,20 @@ export default function NewAssetPage() {
         serialNumber: isElectronic ? form.serialNumber || undefined : undefined,
         specifications: isElectronic && Object.keys(specifications).length ? specifications : undefined,
       });
+
+      if (image) {
+        try {
+          const photoData = new FormData();
+          photoData.append('file', image);
+          photoData.append('assetId', res.data.id);
+          photoData.append('fileType', 'PHOTO');
+          await api.post('/attachments', photoData);
+        } catch {
+          // Asset was created successfully either way — the photo can be added
+          // again from the asset's detail page if this upload step failed.
+        }
+      }
+
       router.push(`/assets/${res.data.id}`);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Could not create asset.');
@@ -81,7 +135,7 @@ export default function NewAssetPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
 
       <div className="max-w-2xl mx-auto px-6 py-8">
@@ -109,6 +163,35 @@ export default function NewAssetPage() {
               className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               placeholder="e.g. Meeting Room AC Unit"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Photo</label>
+            {imagePreview ? (
+              <div className="relative w-32 h-32">
+                <img
+                  src={imagePreview}
+                  alt="Selected asset preview"
+                  className="w-32 h-32 object-cover rounded-md border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  aria-label="Remove photo"
+                  className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-primary text-white hover:opacity-90 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-1 w-32 h-32 rounded-md border border-dashed border-border text-muted hover:border-accent hover:text-accent transition cursor-pointer">
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-xs">Add photo</span>
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+              </label>
+            )}
+            <p className="text-xs text-muted mt-1">Optional. Max 10MB.</p>
+            {imageError && <p className="text-xs text-status-repair mt-1">{imageError}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

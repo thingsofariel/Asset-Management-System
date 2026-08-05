@@ -57,7 +57,7 @@ export default function AssetsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
 
       <div className="max-w-6xl mx-auto px-6 py-8">

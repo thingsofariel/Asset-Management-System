@@ -41,7 +41,7 @@ export default function AuditDetailPage() {
 
   if (!audit) {
     return (
-      <main className="min-h-screen bg-bg">
+      <main className="min-h-screen bg-bg pl-20">
         <AppHeader />
         <div className="max-w-3xl mx-auto px-6 py-8 text-muted text-sm">Loading…</div>
       </main>
@@ -54,7 +54,7 @@ export default function AuditDetailPage() {
   const notFoundCount = items.filter((i) => i.matchStatus === 'NOT_FOUND').length;
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
       <div className="max-w-3xl mx-auto px-6 py-8">
         <Link href="/audits" className="text-sm text-muted hover:text-text">

@@ -43,7 +43,7 @@ export default function AssetDetailPage() {
 
   if (!asset) {
     return (
-      <main className="min-h-screen bg-bg">
+      <main className="min-h-screen bg-bg pl-20">
         <AppHeader />
         <div className="max-w-5xl mx-auto px-6 py-8 text-muted text-sm">Loading…</div>
       </main>
@@ -62,7 +62,7 @@ export default function AssetDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-start justify-between mb-6">

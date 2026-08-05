@@ -19,7 +19,7 @@ export default function ReportsPage() {
   const totalCost = costs.reduce((sum, r) => sum + r.total, 0);
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         <h1 className="font-display font-bold text-2xl text-primary">Reports</h1>
@@ -27,7 +27,7 @@ export default function ReportsPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display font-medium text-primary">Maintenance Cost Analysis</h2>
-            <p className="text-sm text-muted">Total: IDR Rp{totalCost.toFixed(2)}</p>
+            <p className="text-sm text-muted">Total: ${totalCost.toFixed(2)}</p>
           </div>
           <div className="bg-surface border border-border rounded-lg p-5">
             {costs.length > 0 ? (

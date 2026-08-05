@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('categories');
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg pl-20">
       <AppHeader />
       <div className="max-w-3xl mx-auto px-6 py-8">
         <h1 className="font-display font-bold text-2xl text-primary mb-6">Settings</h1>
