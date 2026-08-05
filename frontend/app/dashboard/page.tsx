@@ -40,7 +40,7 @@ export default function DashboardPage() {
         <h1 className="font-display font-bold text-2xl text-primary mb-1">
           Welcome{user ? `, ${user.name.split(' ')[0]}` : ''}
         </h1>
-        <p className="text-muted text-sm mb-6">Here's the current state of your office inventory.</p>
+        <p className="text-muted text-sm mb-6">Here's the current state of Fortuna office inventory.</p>
 
         {summary && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
