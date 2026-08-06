@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Wand2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
+import PasswordInput from '@/components/PasswordInput';
+import { generateSecurePassword } from '@/lib/password';
 import { Category, Location, Department, AppUser } from '@/lib/types';
 
 type Tab = 'categories' | 'locations' | 'departments' | 'users';
@@ -224,8 +226,10 @@ function DepartmentsTab() {
 function UsersTab() {
   const [items, setItems] = useState<AppUser[]>([]);
   const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function load() {
@@ -233,18 +237,30 @@ function UsersTab() {
   }
   useEffect(load, []);
 
+  function generatePassword() {
+    const generated = generateSecurePassword(12);
+    setPassword(generated);
+    setConfirmPassword(generated);
+  }
+
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!name || !email || password.length < 8) {
-      setError('Name, email, and an 8+ character password are required.');
+      setError('First name, email, and an 8+ character password are required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Password and confirm password don\u2019t match.');
       return;
     }
     try {
-      await api.post('/users', { name, email, password });
+      await api.post('/users', { name, lastName: lastName || undefined, email, password });
       setName('');
+      setLastName('');
       setEmail('');
       setPassword('');
+      setConfirmPassword('');
       load();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Could not add person.');
@@ -253,40 +269,66 @@ function UsersTab() {
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5">
-      <p className="text-xs text-muted mb-3">
+      <p className="text-xs text-muted mb-4">
         People added here can be selected as asset holders when checking out equipment. They
         aren't required to log in to the system.
       </p>
-      <form onSubmit={add} className="flex flex-wrap gap-2 mb-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Full name"
-          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
-        />
+      <form onSubmit={add} className="space-y-3 mb-2">
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="First name"
+            className="rounded-md border border-border px-3 py-2 text-sm"
+          />
+          <input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last name (optional)"
+            className="rounded-md border border-border px-3 py-2 text-sm"
+          />
+        </div>
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm"
         />
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          placeholder="Temp password (8+ chars)"
-          className="flex-1 min-w-[140px] rounded-md border border-border px-3 py-2 text-sm"
-        />
-        <button className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-md text-sm">
-          <Plus className="w-4 h-4" /> Add
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            placeholder="Password (8+ chars)"
+            className="rounded-md border border-border px-3 py-2 text-sm"
+            autoComplete="new-password"
+          />
+          <PasswordInput
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Confirm password"
+            className="rounded-md border border-border px-3 py-2 text-sm"
+            autoComplete="new-password"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={generatePassword}
+            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            <Wand2 className="w-3.5 h-3.5" /> Generate secure password
+          </button>
+          <button className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-md text-sm">
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
       </form>
       {error && <p className="text-sm text-status-repair mb-2">{error}</p>}
       <ul className="divide-y divide-border">
         {items.map((u) => (
           <li key={u.id} className="flex items-center justify-between py-2 text-sm">
             <span>
-              {u.name} <span className="text-muted">({u.email})</span>
+              {u.name} {u.lastName ?? ''} <span className="text-muted">({u.email})</span>
             </span>
           </li>
         ))}

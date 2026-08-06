@@ -75,6 +75,7 @@ model Location {
 model User {
   id           String   @id @default(uuid())
   name         String
+  lastName     String?
   email        String   @unique
   passwordHash String
   role         Role     @default(ADMIN)

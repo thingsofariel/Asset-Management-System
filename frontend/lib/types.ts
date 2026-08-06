@@ -119,6 +119,7 @@ export interface Movement {
 export interface AppUser {
   id: string;
   name: string;
+  lastName?: string | null;
   email: string;
   role: string;
 }
