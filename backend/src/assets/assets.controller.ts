@@ -29,8 +29,9 @@ export class AssetsController {
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('dueThisMonth') dueThisMonth?: string,
   ) {
-    return this.assetsService.findAll({ categoryId, status, search });
+    return this.assetsService.findAll({ categoryId, status, search, dueThisMonth: dueThisMonth === 'true' });
   }
 
   // Placed before ':id' so "code" isn't swallowed as an id param.

@@ -6,12 +6,14 @@ import Link from 'next/link';
 import { ImagePlus, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
+import { useToast } from '@/components/ToastProvider';
 import { Category, Location, Department } from '@/lib/types';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function NewAssetPage() {
   const router = useRouter();
+  const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -126,6 +128,7 @@ export default function NewAssetPage() {
         }
       }
 
+      toast.success('Asset created');
       router.push(`/assets/${res.data.id}`);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Could not create asset.');

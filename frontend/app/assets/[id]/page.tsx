@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { Printer, Upload, Wrench, Trash2, Pencil, ArrowLeftRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import ActivityTimeline from '@/components/ActivityTimeline';
+import { useToast } from '@/components/ToastProvider';
 import {
   Asset,
   Category,
@@ -14,7 +17,6 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
   AssetStatus,
-  Movement,
   AppUser,
 } from '@/lib/types';
 
@@ -23,11 +25,13 @@ const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/ap
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(async () => {
     const res = await api.get(`/assets/${id}`);
@@ -52,13 +56,20 @@ export default function AssetDetailPage() {
 
   async function updateStatus(status: AssetStatus) {
     await api.patch(`/assets/${id}`, { status });
+    toast.success('Status updated');
     load();
   }
 
   async function deleteAsset() {
-    if (!confirm(`Delete "${asset?.name}"? This cannot be undone.`)) return;
-    await api.delete(`/assets/${id}`);
-    router.push('/assets');
+    try {
+      await api.delete(`/assets/${id}`);
+      toast.success('Asset deleted');
+      router.push('/assets');
+    } catch {
+      toast.error('Could not delete asset');
+    } finally {
+      setConfirmDelete(false);
+    }
   }
 
   return (
@@ -86,7 +97,7 @@ export default function AssetDetailPage() {
               <Pencil className="w-4 h-4" /> {editing ? 'Cancel Edit' : 'Edit'}
             </button>
             <button
-              onClick={deleteAsset}
+              onClick={() => setConfirmDelete(true)}
               className="flex items-center gap-1.5 bg-surface border border-border text-status-repair px-3 py-2 rounded-md text-sm hover:border-status-repair transition"
             >
               <Trash2 className="w-4 h-4" /> Delete
@@ -177,9 +188,19 @@ export default function AssetDetailPage() {
               logs={asset.maintenanceLogs ?? []}
               onChange={load}
             />
+            <ActivityTimeline asset={asset} />
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title={`Delete "${asset.name}"?`}
+        message="This permanently removes the asset and its records. This cannot be undone."
+        confirmWord="DELETE"
+        onConfirm={deleteAsset}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </main>
   );
 }
@@ -211,6 +232,7 @@ function EditAssetForm({
   departments: Department[];
   onSaved: () => void;
 }) {
+  const toast = useToast();
   const [form, setForm] = useState({
     name: asset.name,
     categoryId: asset.categoryId,
@@ -232,7 +254,10 @@ function EditAssetForm({
         brand: form.brand || undefined,
         serialNumber: form.serialNumber || undefined,
       });
+      toast.success('Asset updated');
       onSaved();
+    } catch {
+      toast.error('Could not save changes');
     } finally {
       setSaving(false);
     }
@@ -333,6 +358,7 @@ function AttachmentsSection({
   attachments: Asset['attachments'];
   onChange: () => void;
 }) {
+  const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<'PHOTO' | 'INVOICE' | 'OTHER'>('PHOTO');
   const [uploading, setUploading] = useState(false);
@@ -348,15 +374,23 @@ function AttachmentsSection({
     try {
       await api.post('/attachments', formData);
       setFile(null);
+      toast.success('Attachment uploaded');
       onChange();
+    } catch {
+      toast.error('Could not upload attachment');
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete(attachmentId: string) {
-    await api.delete(`/attachments/${attachmentId}`);
-    onChange();
+    try {
+      await api.delete(`/attachments/${attachmentId}`);
+      toast.success('Attachment removed');
+      onChange();
+    } catch {
+      toast.error('Could not remove attachment');
+    }
   }
 
   return (
@@ -428,6 +462,7 @@ function MaintenanceSection({
   logs: Asset['maintenanceLogs'];
   onChange: () => void;
 }) {
+  const toast = useToast();
   const activeSchedule = schedules?.find((s) => s.isActive);
   const [interval, setInterval_] = useState('3');
   const [showLogForm, setShowLogForm] = useState(false);
@@ -445,7 +480,10 @@ function MaintenanceSection({
     setSaving(true);
     try {
       await api.post('/maintenance/schedules', { assetId, intervalMonths: Number(interval) });
+      toast.success('Maintenance schedule set');
       onChange();
+    } catch {
+      toast.error('Could not set schedule');
     } finally {
       setSaving(false);
     }
@@ -466,7 +504,10 @@ function MaintenanceSection({
         notes: logForm.notes || undefined,
       });
       setShowLogForm(false);
+      toast.success('Service logged');
       onChange();
+    } catch {
+      toast.error('Could not save service log');
     } finally {
       setSaving(false);
     }
@@ -613,16 +654,16 @@ function MovementsSection({
   locations: Location[];
   onChange: () => void;
 }) {
+  const toast = useToast();
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [history, setHistory] = useState<Movement[]>([]);
   const [action, setAction] = useState<'CHECKOUT' | 'TRANSFER' | null>(null);
   const [targetId, setTargetId] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmDispose, setConfirmDispose] = useState(false);
 
   useEffect(() => {
     api.get('/users').then((res) => setUsers(res.data));
-    api.get('/movements', { params: { assetId: asset.id } }).then((res) => setHistory(res.data));
   }, [asset.id]);
 
   async function runMovement(movementType: string, extra: Record<string, string | undefined> = {}) {
@@ -632,8 +673,10 @@ function MovementsSection({
       setNotes('');
       setAction(null);
       setTargetId('');
+      toast.success('Movement recorded');
       onChange();
-      api.get('/movements', { params: { assetId: asset.id } }).then((res) => setHistory(res.data));
+    } catch {
+      toast.error('Could not record movement');
     } finally {
       setSaving(false);
     }
@@ -644,8 +687,8 @@ function MovementsSection({
   }
 
   async function dispose() {
-    if (!confirm('Mark this asset as disposed / written off? This cannot be undone from here.')) return;
     await runMovement('OUTBOUND');
+    setConfirmDispose(false);
   }
 
   async function submitAction(e: React.FormEvent) {
@@ -693,7 +736,7 @@ function MovementsSection({
           </button>
           {asset.status !== 'DISPOSED' && (
             <button
-              onClick={dispose}
+              onClick={() => setConfirmDispose(true)}
               className="bg-surface border border-border text-status-repair px-3 py-2 rounded-md text-sm hover:border-status-repair transition"
             >
               Dispose
@@ -715,7 +758,7 @@ function MovementsSection({
                 <option value="">Select person</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name}
+                    {u.name} {u.lastName ?? ''}
                   </option>
                 ))}
               </select>
@@ -755,19 +798,16 @@ function MovementsSection({
         </form>
       )}
 
-      {history.length > 0 && (
-        <>
-          <h3 className="text-sm font-medium text-primary mb-2">History</h3>
-          <ul className="space-y-2">
-            {history.slice(0, 5).map((m) => (
-              <li key={m.id} className="text-sm border-t border-border pt-2 flex justify-between">
-                <span>{m.movementType}</span>
-                <span className="text-muted">{new Date(m.movementDate).toLocaleDateString()}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <p className="text-xs text-muted">Full movement history is in the Activity timeline below.</p>
+
+      <ConfirmDialog
+        open={confirmDispose}
+        title="Dispose this asset?"
+        message="This marks the asset as disposed / written off. This cannot be undone from here."
+        confirmWord="DISPOSE"
+        onConfirm={dispose}
+        onCancel={() => setConfirmDispose(false)}
+      />
     </div>
   );
 }

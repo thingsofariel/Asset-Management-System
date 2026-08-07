@@ -7,6 +7,7 @@ import {
   LogOut,
   Settings,
   ScanLine,
+  Search,
   LayoutDashboard,
   Boxes,
   Wrench,
@@ -17,6 +18,7 @@ import {
 import { clearSession } from '@/lib/auth';
 import { api } from '@/lib/api';
 import NotificationBell from './NotificationBell';
+import GlobalSearch from './GlobalSearch';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -92,6 +94,15 @@ export default function AppHeader() {
         <ScanLine className="w-5 h-5 text-accent" strokeWidth={2.5} />
       </Link>
 
+      <button
+        onClick={() => window.dispatchEvent(new Event('open-global-search'))}
+        title="Search (Ctrl/Cmd+K)"
+        aria-label="Search"
+        className="w-11 h-11 mb-2 flex items-center justify-center rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition"
+      >
+        <Search className="w-5 h-5" strokeWidth={2} />
+      </button>
+
       <nav className="flex flex-col items-center gap-2">
         {navLinks.map((link) => (
           <NavIcon
@@ -121,6 +132,7 @@ export default function AppHeader() {
           <LogOut className="w-5 h-5" strokeWidth={2} />
         </button>
       </div>
+      <GlobalSearch />
     </aside>
   );
 }

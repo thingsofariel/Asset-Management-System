@@ -50,7 +50,11 @@ export class AssetsService {
     });
   }
 
-  findAll(filters: { categoryId?: string; status?: string; search?: string }) {
+  findAll(filters: { categoryId?: string; status?: string; search?: string; dueThisMonth?: boolean }) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
     return this.prisma.asset.findMany({
       where: {
         categoryId: filters.categoryId || undefined,
@@ -61,7 +65,15 @@ export class AssetsService {
                 { name: { contains: filters.search, mode: 'insensitive' } },
                 { assetCode: { contains: filters.search, mode: 'insensitive' } },
                 { serialNumber: { contains: filters.search, mode: 'insensitive' } },
+                { category: { name: { contains: filters.search, mode: 'insensitive' } } },
               ],
+            }
+          : {}),
+        ...(filters.dueThisMonth
+          ? {
+              maintenanceSchedules: {
+                some: { isActive: true, nextDueDate: { gte: startOfMonth, lte: endOfMonth } },
+              },
             }
           : {}),
       },

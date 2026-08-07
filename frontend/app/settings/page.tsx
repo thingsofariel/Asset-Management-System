@@ -5,6 +5,7 @@ import { Plus, Trash2, Wand2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
 import PasswordInput from '@/components/PasswordInput';
+import { useToast } from '@/components/ToastProvider';
 import { generateSecurePassword } from '@/lib/password';
 import { Category, Location, Department, AppUser } from '@/lib/types';
 
@@ -43,6 +44,7 @@ export default function SettingsPage() {
 }
 
 function CategoriesTab() {
+  const toast = useToast();
   const [items, setItems] = useState<Category[]>([]);
   const [name, setName] = useState('');
   const [assetType, setAssetType] = useState<'FIXED' | 'ELECTRONIC'>('FIXED');
@@ -55,14 +57,24 @@ function CategoriesTab() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!name) return;
-    await api.post('/categories', { name, assetType });
-    setName('');
-    load();
+    try {
+      await api.post('/categories', { name, assetType });
+      setName('');
+      toast.success('Category added');
+      load();
+    } catch {
+      toast.error('Could not add category');
+    }
   }
 
   async function remove(id: string) {
-    await api.delete(`/categories/${id}`);
-    load();
+    try {
+      await api.delete(`/categories/${id}`);
+      toast.success('Category removed');
+      load();
+    } catch {
+      toast.error('Could not remove category');
+    }
   }
 
   return (
@@ -104,6 +116,7 @@ function CategoriesTab() {
 }
 
 function LocationsTab() {
+  const toast = useToast();
   const [items, setItems] = useState<Location[]>([]);
   const [room, setRoom] = useState('');
   const [floor, setFloor] = useState('');
@@ -117,16 +130,26 @@ function LocationsTab() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!room) return;
-    await api.post('/locations', { room, floor: floor || undefined, building: building || undefined });
-    setRoom('');
-    setFloor('');
-    setBuilding('');
-    load();
+    try {
+      await api.post('/locations', { room, floor: floor || undefined, building: building || undefined });
+      setRoom('');
+      setFloor('');
+      setBuilding('');
+      toast.success('Location added');
+      load();
+    } catch {
+      toast.error('Could not add location');
+    }
   }
 
   async function remove(id: string) {
-    await api.delete(`/locations/${id}`);
-    load();
+    try {
+      await api.delete(`/locations/${id}`);
+      toast.success('Location removed');
+      load();
+    } catch {
+      toast.error('Could not remove location');
+    }
   }
 
   return (
@@ -174,6 +197,7 @@ function LocationsTab() {
 }
 
 function DepartmentsTab() {
+  const toast = useToast();
   const [items, setItems] = useState<Department[]>([]);
   const [name, setName] = useState('');
 
@@ -185,14 +209,24 @@ function DepartmentsTab() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!name) return;
-    await api.post('/departments', { name });
-    setName('');
-    load();
+    try {
+      await api.post('/departments', { name });
+      setName('');
+      toast.success('Department added');
+      load();
+    } catch {
+      toast.error('Could not add department');
+    }
   }
 
   async function remove(id: string) {
-    await api.delete(`/departments/${id}`);
-    load();
+    try {
+      await api.delete(`/departments/${id}`);
+      toast.success('Department removed');
+      load();
+    } catch {
+      toast.error('Could not remove department');
+    }
   }
 
   return (
@@ -224,6 +258,7 @@ function DepartmentsTab() {
 }
 
 function UsersTab() {
+  const toast = useToast();
   const [items, setItems] = useState<AppUser[]>([]);
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -261,6 +296,7 @@ function UsersTab() {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      toast.success('Person added');
       load();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Could not add person.');

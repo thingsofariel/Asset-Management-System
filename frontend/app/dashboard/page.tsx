@@ -17,7 +17,7 @@ import {
 import { api } from '@/lib/api';
 import { getStoredUser } from '@/lib/auth';
 import AppHeader from '@/components/AppHeader';
-import { Asset, DashboardSummary, STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
+import { Asset, DashboardSummary, MaintenanceSchedule, STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
 
 const modules = [
   { icon: Boxes, title: 'Assets', description: 'Master data, categories, and QR label generation', href: '/assets' },
@@ -42,6 +42,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentAssets, setRecentAssets] = useState<Asset[]>([]);
+  const [damagedAssets, setDamagedAssets] = useState<Asset[]>([]);
+  const [dueSoonSchedules, setDueSoonSchedules] = useState<MaintenanceSchedule[]>([]);
 
   useEffect(() => {
     const stored = getStoredUser();
@@ -52,6 +54,25 @@ export default function DashboardPage() {
     setUser(stored);
     api.get('/reports/dashboard-summary').then((res) => setSummary(res.data));
     api.get('/assets').then((res) => setRecentAssets(res.data.slice(0, 5)));
+
+    Promise.all([
+      api.get('/assets', { params: { status: 'UNDER_REPAIR' } }),
+      api.get('/assets', { params: { status: 'UNSERVICEABLE' } }),
+    ]).then(([repair, unserviceable]) => {
+      setDamagedAssets([...repair.data, ...unserviceable.data].slice(0, 5));
+    });
+
+    api.get('/maintenance/schedules').then((res) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueSoon = (res.data as MaintenanceSchedule[]).filter((s) => {
+        const due = new Date(s.nextDueDate);
+        due.setHours(0, 0, 0, 0);
+        const daysUntil = Math.round((due.getTime() - today.getTime()) / 86400000);
+        return daysUntil <= 7;
+      });
+      setDueSoonSchedules(dueSoon.slice(0, 5));
+    });
   }, [router]);
 
   const statusData = summary
@@ -97,6 +118,47 @@ export default function DashboardPage() {
               <p className="font-display font-bold text-3xl text-status-maintenance">
                 {summary.upcomingMaintenance}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Proactive alerts — specific items needing action, not just counts */}
+        {(damagedAssets.length > 0 || dueSoonSchedules.length > 0) && (
+          <div className="bg-surface border border-status-maintenance/30 rounded-xl p-5 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-status-maintenance" />
+              <h2 className="font-display font-medium text-primary">Attention Needed</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+              {dueSoonSchedules.map((s) => {
+                const daysUntil = Math.round(
+                  (new Date(s.nextDueDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000,
+                );
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/assets/${s.assetId}`}
+                    className="flex items-center justify-between py-1.5 text-sm hover:text-accent transition"
+                  >
+                    <span className="truncate">{s.asset?.name}</span>
+                    <span className={`text-xs flex-shrink-0 ml-2 ${daysUntil < 0 ? 'text-status-repair' : 'text-status-maintenance'}`}>
+                      {daysUntil < 0 ? `Overdue ${Math.abs(daysUntil)}d` : daysUntil === 0 ? 'Due today' : `Due in ${daysUntil}d`}
+                    </span>
+                  </Link>
+                );
+              })}
+              {damagedAssets.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/assets/${a.id}`}
+                  className="flex items-center justify-between py-1.5 text-sm hover:text-accent transition"
+                >
+                  <span className="truncate">{a.name}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${STATUS_COLORS[a.status]}`}>
+                    {STATUS_LABELS[a.status]}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         )}
