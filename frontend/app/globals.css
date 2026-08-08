@@ -15,6 +15,10 @@
   --color-status-maintenance: #d97706;
   --color-status-repair: #dc2626;
   --color-status-scrap: #6b7280;
+
+  /* Tells the browser to render native widgets (date pickers, the open
+     dropdown list of a <select>, scrollbars, checkboxes) in light style. */
+  color-scheme: light;
 }
 
 /* Dark mode — only background/surface/text/border/status shift. --color-primary
@@ -33,6 +37,25 @@
   --color-status-maintenance: #f59e0b;
   --color-status-repair: #f04444;
   --color-status-scrap: #8b93a3;
+
+  color-scheme: dark;
+}
+
+/* Base-layer defaults so every input/select/textarea follows the theme
+   instead of the browser's light-mode default background+text. Wrapped in
+   @layer base so any component's own bg-*/text-* utility class still wins. */
+@layer base {
+  input,
+  select,
+  textarea {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
 }
 
 body {
