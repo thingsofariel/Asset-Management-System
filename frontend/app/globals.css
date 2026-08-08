@@ -17,6 +17,24 @@
   --color-status-scrap: #6b7280;
 }
 
+/* Dark mode — only background/surface/text/border/status shift. --color-primary
+   is deliberately left unchanged: the sidebar and primary buttons stay the same
+   navy in both themes, since that navy already reads well against either
+   background rather than needing its own dark-mode variant. */
+.dark {
+  --color-bg: #14171f;
+  --color-surface: #1c212c;
+  --color-accent: #17c9be;
+  --color-text: #e8eaed;
+  --color-muted: #8b93a3;
+  --color-border: #2c3241;
+
+  --color-status-good: #22c55e;
+  --color-status-maintenance: #f59e0b;
+  --color-status-repair: #f04444;
+  --color-status-scrap: #8b93a3;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);

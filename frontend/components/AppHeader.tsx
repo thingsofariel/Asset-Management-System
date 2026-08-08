@@ -19,6 +19,7 @@ import { clearSession } from '@/lib/auth';
 import { api } from '@/lib/api';
 import NotificationBell from './NotificationBell';
 import GlobalSearch from './GlobalSearch';
+import ThemeToggle from './ThemeToggle';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -122,6 +123,7 @@ export default function AppHeader() {
 
       <div className="flex flex-col items-center gap-2 text-white/60">
         <NotificationBell />
+        <ThemeToggle />
         <NavIcon href="/settings" label="Settings" icon={Settings} active={!!pathname?.startsWith('/settings')} />
         <button
           onClick={handleLogout}
