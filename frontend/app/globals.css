@@ -43,7 +43,7 @@
 
 /* Base-layer defaults so every input/select/textarea follows the theme
    instead of the browser's light-mode default background+text. Wrapped in
-   @layer base so any component's own bg-*/text-* utility class still wins. */
+   @layer base so any component's own bg- /text-* utility class still wins. */
 @layer base {
   input,
   select,
