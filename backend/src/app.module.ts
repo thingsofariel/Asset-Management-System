@@ -2,38 +2,37 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { LocationsModule } from './locations/locations.module';
-import { DepartmentsModule } from './departments/departments.module';
-import { CategoriesModule } from './categories/categories.module';
-import { AssetsModule } from './assets/assets.module';
-import { AttachmentsModule } from './attachments/attachments.module';
-import { MaintenanceModule } from './maintenance/maintenance.module';
-import { NotificationsModule } from './notifications/notifications.module';
-import { SchedulerModule } from './scheduler/scheduler.module';
-import { MovementsModule } from './movements/movements.module';
-import { AuditsModule } from './audits/audits.module';
-import { ReportsModule } from './reports/reports.module';
+import { CoreModule } from './modules/core/core.module'; // absorbs departments + notifications too now
+import { LocationsModule } from './modules/assets/locations/locations.module';
+import { CategoriesModule } from './modules/assets/categories/categories.module';
+import { AssetsModule } from './modules/assets/assets.module';
+import { AttachmentsModule } from './modules/assets/attachments/attachments.module';
+import { MaintenanceModule } from './modules/assets/maintenance/maintenance.module';
+import { SchedulerModule } from './modules/assets/scheduler/scheduler.module';
+import { MovementsModule } from './modules/assets/movements/movements.module';
+import { AuditsModule } from './modules/assets/audits/audits.module';
+import { ReportsModule } from './modules/assets/reports/reports.module';
+import { HelpdeskModule } from './modules/helpdesk/helpdesk.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     PrismaModule,
-    AuthModule,
-    UsersModule,
+    CoreModule,
     LocationsModule,
-    DepartmentsModule,
     CategoriesModule,
     AssetsModule,
     AttachmentsModule,
     MaintenanceModule,
-    NotificationsModule,
     SchedulerModule,
     MovementsModule,
     AuditsModule,
     ReportsModule,
+    HelpdeskModule,
+    PayrollModule,
   ],
 })
 export class AppModule {}
+

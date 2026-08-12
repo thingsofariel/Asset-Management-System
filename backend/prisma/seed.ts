@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -15,12 +15,17 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
+  // Writes straight to the DB. Every account created after this one
+  // goes through the normal admin-invite flow (POST /users/invite),
+  // which requires an existing admin's JWT — so it can't be used to
+  // create the very first admin. This script is that one exception.
   await prisma.user.create({
     data: {
-      name: 'System Admin',
+      fullName: 'System Admin',
       email: adminEmail,
       passwordHash,
       role: 'ADMIN',
+      status: UserStatus.ACTIVE,
     },
   });
 
