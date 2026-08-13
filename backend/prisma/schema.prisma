@@ -37,16 +37,33 @@ enum Role {
   EMPLOYEE
 }
 
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
 model User {
   id           String      @id @default(uuid())
   email        String      @unique
-  passwordHash String      @map("password_hash")
+  // Null until an invite is accepted — see the invite fields below.
+  passwordHash String?     @map("password_hash")
   fullName     String      @map("full_name")
   avatarUrl    String?     @map("avatar_url") // carried over from Help Desk's admin_users
   role         Role        @default(EMPLOYEE)
+  status       UserStatus  @default(ACTIVE) @map("status")
 
   department   Department? @relation(fields: [departmentId], references: [id])
   departmentId String?     @map("department_id")
+
+  // Admin-invite flow: an admin creates a PENDING user with a token;
+  // the invitee sets their own password to activate it. Token is
+  // cleared once used or left to expire.
+  inviteToken          String?   @unique @map("invite_token")
+  inviteTokenExpiresAt DateTime? @map("invite_token_expires_at")
+  invitedBy            User?     @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById          String?   @map("invited_by_id")
+  invitedUsers         User[]    @relation("InvitedBy")
 
   // legacy reference fields — bridge for shadow-write migration,
   // dropped once all three modules read/write User exclusively

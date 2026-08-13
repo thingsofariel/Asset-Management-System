@@ -4,19 +4,7 @@ import { Prisma, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
-
-// passwordHash, inviteToken, and the legacy* migration-bridge fields
-// never leave this service via SAFE_USER_SELECT.
-const SAFE_USER_SELECT = {
-  id: true,
-  fullName: true,
-  email: true,
-  role: true,
-  status: true,
-  avatarUrl: true,
-  departmentId: true,
-  createdAt: true,
-} as const;
+import { SAFE_USER_SELECT } from './safe-user';
 
 const INVITE_EXPIRES_IN_DAYS = Number(process.env.INVITE_EXPIRES_IN_DAYS ?? 7);
 

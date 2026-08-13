@@ -3,20 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-
-// Fields that never leave this service on any response.
-function stripInternalFields<T extends Record<string, any>>(user: T) {
-  const {
-    passwordHash,
-    inviteToken,
-    inviteTokenExpiresAt,
-    legacyAmsUserId,
-    legacyHelpdeskAdminId,
-    legacyPayslipEmployeeId,
-    ...safeUser
-  } = user;
-  return safeUser;
-}
+import { toSafeUser } from '../users/safe-user';
 
 @Injectable()
 export class AuthService {
@@ -35,7 +22,7 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) return null;
 
-    return stripInternalFields(user);
+    return toSafeUser(user);
   }
 
   async login(email: string, password: string) {
@@ -83,7 +70,7 @@ export class AuthService {
 
     return {
       accessToken: this.jwtService.sign(payload),
-      user: stripInternalFields(activated),
+      user: toSafeUser(activated),
     };
   }
 
