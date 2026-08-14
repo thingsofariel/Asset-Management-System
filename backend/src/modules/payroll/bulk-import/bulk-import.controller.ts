@@ -18,7 +18,6 @@ import { JwtAuthGuard } from '../../core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/auth/guards/roles.guard';
 import { Roles } from '../../core/auth/decorators/roles.decorator';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
-import { PrismaService } from '../../../prisma/prisma.service';
 import { BulkImportService } from './bulk-import.service';
 import { BULK_IMPORT_QUEUE_NAME } from './redis-connections';
 
@@ -28,7 +27,6 @@ import { BULK_IMPORT_QUEUE_NAME } from './redis-connections';
 export class BulkImportController {
   constructor(
     private readonly bulkImportService: BulkImportService,
-    private readonly prisma: PrismaService,
     @InjectQueue(BULK_IMPORT_QUEUE_NAME) private readonly queue: Queue,
   ) {}
 
@@ -57,14 +55,6 @@ export class BulkImportController {
       });
     }
 
-    // req.user.employeeId came for free in the original since Employee
-    // WAS the auth table — resolved via lookup here instead.
-    const actor = await this.prisma.employee.findUnique({
-      where: { userId: user.userId },
-      select: { employeeId: true },
-    });
-    if (!actor) throw new BadRequestException('No employee record is linked to this account');
-
     // Generated up front so the response can tell the admin how to
     // poll for status, even though jobs are still being enqueued below.
     const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -83,7 +73,7 @@ export class BulkImportController {
             authorizedSignatory: row.data.authorizedSignatory,
             earnings: row.earnings,
             deductions: row.deductions,
-            actorId: actor.employeeId,
+            actorId: user.userId,
             batchId,
             sourceRowNumber: row.rowNumber,
           },

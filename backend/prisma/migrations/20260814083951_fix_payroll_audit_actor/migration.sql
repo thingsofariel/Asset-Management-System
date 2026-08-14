@@ -351,7 +351,7 @@ CREATE TABLE "deduction_details" (
 CREATE TABLE "payroll_audit_logs" (
     "log_id" SERIAL NOT NULL,
     "payslip_id" INTEGER,
-    "actor_id" INTEGER NOT NULL,
+    "actor_id" TEXT NOT NULL,
     "action" TEXT NOT NULL,
     "detail" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -528,4 +528,4 @@ ALTER TABLE "deduction_details" ADD CONSTRAINT "deduction_details_payslip_id_fke
 ALTER TABLE "payroll_audit_logs" ADD CONSTRAINT "payroll_audit_logs_payslip_id_fkey" FOREIGN KEY ("payslip_id") REFERENCES "payslips"("payslip_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payroll_audit_logs" ADD CONSTRAINT "payroll_audit_logs_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "employees"("employee_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payroll_audit_logs" ADD CONSTRAINT "payroll_audit_logs_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

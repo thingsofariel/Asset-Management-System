@@ -89,6 +89,7 @@ model User {
 
   // --- core relations ---
   notifications      Notification[]    @relation("NotificationTarget")
+  payrollAuditLogs   PayrollAuditLog[]
 
   @@map("users")
 }
@@ -482,7 +483,6 @@ model Employee {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   payslips  Payslip[]
-  auditLogs PayrollAuditLog[] @relation("ActorPayrollAuditLogs")
 
   @@map("employees")
 }
@@ -572,8 +572,11 @@ model PayrollAuditLog {
   payslipId Int?     @map("payslip_id")
   payslip   Payslip? @relation(fields: [payslipId], references: [payslipId], onDelete: SetNull)
 
-  actorId Int      @map("actor_id")
-  actor   Employee @relation("ActorPayrollAuditLogs", fields: [actorId], references: [employeeId])
+  // Points at core.User, not Employee — the acting admin doesn't need
+  // to be a payroll employee themselves (e.g. a general system admin
+  // administering payroll for others has no Employee record at all).
+  actorId String @map("actor_id")
+  actor   User   @relation(fields: [actorId], references: [id])
 
   action String
   detail String?

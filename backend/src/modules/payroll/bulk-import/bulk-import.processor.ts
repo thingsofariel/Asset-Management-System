@@ -15,7 +15,7 @@ interface ImportJobData {
   authorizedSignatory: string;
   earnings: { label: string; amount: number }[];
   deductions: { label: string; amount: number }[];
-  actorId: number;
+  actorId: string; // core User id, not Employee id
   batchId: string;
   sourceRowNumber: number;
 }

@@ -90,8 +90,6 @@ export class PayslipsService {
    * the line items are inserted, same as the original.
    */
   async create(dto: CreatePayslipDto, actorUserId: string) {
-    const actor = await this.resolveEmployee(actorUserId);
-
     let payslip;
     try {
       payslip = await this.prisma.$transaction(async (tx) => {
@@ -148,7 +146,7 @@ export class PayslipsService {
     await this.prisma.payrollAuditLog.create({
       data: {
         payslipId: payslip!.payslipId,
-        actorId: actor.employeeId,
+        actorId: actorUserId,
         action: 'CREATE',
         detail: `Payslip created for employee ${dto.employeeId}, period ${dto.periodMonth}/${dto.periodYear}`,
       },
@@ -159,7 +157,6 @@ export class PayslipsService {
 
   /** Transitions DRAFT -> FINALIZED. PDF is generated before the status flips, so a Puppeteer failure leaves it in DRAFT rather than FINALIZED with no document. */
   async finalize(payslipId: number, actorUserId: string) {
-    const actor = await this.resolveEmployee(actorUserId);
     const payslip = await this.prisma.payslip.findUnique({ where: { payslipId }, include: FULL_INCLUDE });
     if (!payslip) throw new NotFoundException('Payslip not found');
     if (payslip.status !== PayslipStatus.DRAFT) {
@@ -176,7 +173,7 @@ export class PayslipsService {
     });
 
     await this.prisma.payrollAuditLog.create({
-      data: { payslipId, actorId: actor.employeeId, action: 'FINALIZE', detail: 'Payslip finalized and PDF generated.' },
+      data: { payslipId, actorId: actorUserId, action: 'FINALIZE', detail: 'Payslip finalized and PDF generated.' },
     });
 
     // Best-effort — nothing in this block should be able to make
@@ -195,7 +192,6 @@ export class PayslipsService {
 
   /** Manual confirmation, independent of the automatic email finalize() now sends — useful as an explicit audit record, or if HR handed it over another way (e.g. the automatic email bounced). */
   async markSent(payslipId: number, actorUserId: string) {
-    const actor = await this.resolveEmployee(actorUserId);
     const payslip = await this.prisma.payslip.findUnique({ where: { payslipId } });
     if (!payslip) throw new NotFoundException('Payslip not found');
     if (payslip.status !== PayslipStatus.FINALIZED) {
@@ -207,7 +203,7 @@ export class PayslipsService {
     const updated = await this.prisma.payslip.update({ where: { payslipId }, data: { status: PayslipStatus.SENT } });
 
     await this.prisma.payrollAuditLog.create({
-      data: { payslipId, actorId: actor.employeeId, action: 'MARK_SENT', detail: 'Payslip manually marked as sent to employee.' },
+      data: { payslipId, actorId: actorUserId, action: 'MARK_SENT', detail: 'Payslip manually marked as sent to employee.' },
     });
 
     return updated;
