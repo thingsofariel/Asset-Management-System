@@ -89,6 +89,18 @@ export class BulkImportProcessor extends WorkerHost {
         });
       }
 
+      // Same reasoning as PayslipsService.create(): the trigger only
+      // fires on an earning/deduction row change, so a CSV row with
+      // neither would otherwise leave totals stuck at zero.
+      const earningsSum = earnings.reduce((sum, e) => sum + e.amount, 0);
+      const deductionsSum = deductions.reduce((sum, d) => sum + d.amount, 0);
+      const totalEarnings = basicSalary + earningsSum;
+
+      await tx.payslip.update({
+        where: { payslipId: created.payslipId },
+        data: { totalEarnings, totalDeductions: deductionsSum, netPay: totalEarnings - deductionsSum },
+      });
+
       return created;
     });
 

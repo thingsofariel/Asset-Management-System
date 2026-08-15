@@ -129,8 +129,23 @@ export class PayslipsService {
           });
         }
 
-        // Re-fetch so the response includes the trigger-calculated
-        // totals, not the stale zero-value totals from the initial insert.
+        // Explicitly computed rather than left to the trigger alone —
+        // the trigger only fires on an insert/update/delete to
+        // earning_details/deduction_details, so a payslip with ZERO
+        // line items of either would otherwise leave totalEarnings/
+        // totalDeductions/netPay stuck at their zero defaults forever.
+        // This is correct immediately regardless of item count; the
+        // trigger still recalculates on any future line-item change.
+        const earningsSum = (dto.earnings ?? []).reduce((sum, e) => sum + e.amount, 0);
+        const deductionsSum = (dto.deductions ?? []).reduce((sum, d) => sum + d.amount, 0);
+        const totalEarnings = dto.basicSalary + earningsSum;
+        const totalDeductions = deductionsSum;
+
+        await tx.payslip.update({
+          where: { payslipId: created.payslipId },
+          data: { totalEarnings, totalDeductions, netPay: totalEarnings - totalDeductions },
+        });
+
         return tx.payslip.findUnique({
           where: { payslipId: created.payslipId },
           include: { earningDetails: true, deductionDetails: true },
@@ -180,9 +195,13 @@ export class PayslipsService {
     // finalize() itself fail. The payslip is correctly finalized
     // either way; HR can always fall back to manual outreach + markSent.
     try {
-      const { link } = await this.getOrCreateShareLink(payslipId);
+      const { link, shareToken } = await this.getOrCreateShareLink(payslipId);
       const periodLabel = `${payslip.periodMonth}/${payslip.periodYear}`;
       await this.mailer.notifyPayslipReady(payslip.employee.user.email, payslip.employee.user.fullName, periodLabel, link);
+      // getOrCreateShareLink() already persisted this to the DB — this
+      // just keeps the object we return in sync with it, so the caller
+      // doesn't see a stale null shareToken on a payslip that actually has one.
+      updated.shareToken = shareToken;
     } catch (err: any) {
       this.logger.error(`Failed to send payslip-ready notification: ${err.message}`);
     }
@@ -220,7 +239,7 @@ export class PayslipsService {
     }
 
     const frontendBaseUrl = process.env.FRONTEND_BASE_URL ?? 'http://localhost:5173';
-    return { link: `${frontendBaseUrl}/slip/${shareToken}` };
+    return { link: `${frontendBaseUrl}/slip/${shareToken}`, shareToken };
   }
 
   async loadFullByShareToken(shareToken: string): Promise<FullPayslip | null> {
