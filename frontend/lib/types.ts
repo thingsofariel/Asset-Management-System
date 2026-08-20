@@ -110,18 +110,21 @@ export interface Movement {
   movementType: MovementType;
   fromLocation?: Location | null;
   toLocation?: Location | null;
-  fromUser?: { id: string; name: string } | null;
-  toUser?: { id: string; name: string } | null;
+  fromUser?: { id: string; fullName: string } | null;
+  toUser?: { id: string; fullName: string } | null;
   notes?: string | null;
   movementDate: string;
 }
 
 export interface AppUser {
   id: string;
-  name: string;
-  lastName?: string | null;
+  fullName: string;
   email: string;
-  role: string;
+  role: 'ADMIN' | 'EMPLOYEE';
+  status: 'PENDING' | 'ACTIVE' | 'DISABLED';
+  avatarUrl?: string | null;
+  departmentId?: string | null;
+  createdAt: string;
 }
 
 export type MatchStatus = 'MATCHED' | 'MISMATCH' | 'NOT_FOUND';

@@ -87,7 +87,7 @@ export default function DashboardPage() {
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="font-display font-bold text-2xl text-primary mb-1">
-          Welcome{user ? `, ${user.name.split(' ')[0]}` : ''}
+          Welcome{user ? `, ${user.fullName.split(' ')[0]}` : ''}
         </h1>
         <p className="text-muted text-sm mb-6">Here's the current state of your office inventory.</p>
 

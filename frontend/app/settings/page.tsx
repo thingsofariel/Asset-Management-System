@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Wand2 } from 'lucide-react';
+import { Plus, Trash2, Copy, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
-import PasswordInput from '@/components/PasswordInput';
 import { useToast } from '@/components/ToastProvider';
-import { generateSecurePassword } from '@/lib/password';
 import { Category, Location, Department, AppUser } from '@/lib/types';
 
 type Tab = 'categories' | 'locations' | 'departments' | 'users';
@@ -257,118 +255,116 @@ function DepartmentsTab() {
   );
 }
 
+const STATUS_BADGE: Record<AppUser['status'], string> = {
+  PENDING: 'text-status-maintenance bg-status-maintenance/10',
+  ACTIVE: 'text-status-good bg-status-good/10',
+  DISABLED: 'text-status-scrap bg-status-scrap/10',
+};
+
 function UsersTab() {
   const toast = useToast();
   const [items, setItems] = useState<AppUser[]>([]);
-  const [name, setName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'ADMIN' | 'EMPLOYEE'>('EMPLOYEE');
   const [error, setError] = useState<string | null>(null);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   function load() {
     api.get('/users').then((res) => setItems(res.data));
   }
   useEffect(load, []);
 
-  function generatePassword() {
-    const generated = generateSecurePassword(12);
-    setPassword(generated);
-    setConfirmPassword(generated);
-  }
-
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!name || !email || password.length < 8) {
-      setError('First name, email, and an 8+ character password are required.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Password and confirm password don\u2019t match.');
+    setLastInviteLink(null);
+    if (!fullName || !email) {
+      setError('Full name and email are required.');
       return;
     }
     try {
-      await api.post('/users', { name, lastName: lastName || undefined, email, password });
-      setName('');
-      setLastName('');
+      // No password set here — the invitee sets their own via the link
+      // this returns. Nothing gets emailed automatically yet, so that
+      // link has to be copied and shared manually for now.
+      const res = await api.post('/users/invite', { fullName, email, role });
+      setFullName('');
       setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      toast.success('Person added');
+      setRole('EMPLOYEE');
+      setLastInviteLink(res.data.inviteLink);
+      toast.success('Invite created — copy the link below to share it');
       load();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Could not add person.');
+      setError(err?.response?.data?.message ?? 'Could not create invite.');
     }
+  }
+
+  function copyLink() {
+    if (!lastInviteLink) return;
+    navigator.clipboard.writeText(lastInviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5">
       <p className="text-xs text-muted mb-4">
-        People added here can be selected as asset holders when checking out equipment. They
-        aren't required to log in to the system.
+        Inviting someone here creates their login for the whole system — assets, help desk, and
+        payroll all share one account. They set their own password using the link you share with
+        them; nothing is emailed automatically yet.
       </p>
       <form onSubmit={add} className="space-y-3 mb-2">
         <div className="grid grid-cols-2 gap-3">
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="First name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Full name"
             className="rounded-md border border-border px-3 py-2 text-sm"
           />
           <input
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Last name (optional)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
             className="rounded-md border border-border px-3 py-2 text-sm"
-          />
-        </div>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full rounded-md border border-border px-3 py-2 text-sm"
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <PasswordInput
-            value={password}
-            onChange={setPassword}
-            placeholder="Password (8+ chars)"
-            className="rounded-md border border-border px-3 py-2 text-sm"
-            autoComplete="new-password"
-          />
-          <PasswordInput
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            placeholder="Confirm password"
-            className="rounded-md border border-border px-3 py-2 text-sm"
-            autoComplete="new-password"
           />
         </div>
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={generatePassword}
-            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as 'ADMIN' | 'EMPLOYEE')}
+            className="rounded-md border border-border px-3 py-2 text-sm bg-surface"
           >
-            <Wand2 className="w-3.5 h-3.5" /> Generate secure password
-          </button>
+            <option value="EMPLOYEE">Employee</option>
+            <option value="ADMIN">Admin</option>
+          </select>
           <button className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-md text-sm">
-            <Plus className="w-4 h-4" /> Add
+            <Plus className="w-4 h-4" /> Send invite
           </button>
         </div>
       </form>
       {error && <p className="text-sm text-status-repair mb-2">{error}</p>}
+      {lastInviteLink && (
+        <div className="flex items-center gap-2 bg-bg border border-border rounded-md px-3 py-2 mb-4 text-sm">
+          <span className="flex-1 truncate text-muted">{lastInviteLink}</span>
+          <button onClick={copyLink} className="flex items-center gap-1 text-accent shrink-0">
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      )}
       <ul className="divide-y divide-border">
         {items.map((u) => (
           <li key={u.id} className="flex items-center justify-between py-2 text-sm">
             <span>
-              {u.name} {u.lastName ?? ''} <span className="text-muted">({u.email})</span>
+              {u.fullName} <span className="text-muted">({u.email})</span>
+            </span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[u.status]}`}>
+              {u.status === 'PENDING' ? 'Invite pending' : u.status === 'ACTIVE' ? 'Active' : 'Disabled'}
             </span>
           </li>
         ))}
-        {items.length === 0 && <p className="text-sm text-muted py-2">No one added yet.</p>}
+        {items.length === 0 && <p className="text-sm text-muted py-2">No one invited yet.</p>}
       </ul>
     </div>
   );

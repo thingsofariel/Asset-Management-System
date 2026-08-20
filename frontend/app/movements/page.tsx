@@ -17,7 +17,7 @@ const TYPE_LABELS: Record<MovementType, string> = {
 function describe(m: Movement) {
   switch (m.movementType) {
     case 'CHECKOUT':
-      return `→ ${m.toUser?.name ?? 'employee'}`;
+      return `→ ${m.toUser?.fullName ?? 'employee'}`;
     case 'CHECKIN':
       return `Returned${m.toLocation ? ` to ${m.toLocation.room}` : ''}`;
     case 'TRANSFER':

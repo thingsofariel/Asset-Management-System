@@ -708,7 +708,7 @@ function MovementsSection({
         <div className="text-sm">
           <p className="text-muted">Current Holder</p>
           <p className="font-medium">
-            {isCheckedOut ? users.find((u) => u.id === asset.currentHolderId)?.name ?? 'Assigned' : 'Unassigned (in storage)'}
+            {isCheckedOut ? users.find((u) => u.id === asset.currentHolderId)?.fullName ?? 'Assigned' : 'Unassigned (in storage)'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -758,7 +758,7 @@ function MovementsSection({
                 <option value="">Select person</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name} {u.lastName ?? ''}
+                    {u.fullName}
                   </option>
                 ))}
               </select>
