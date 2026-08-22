@@ -16,8 +16,10 @@ import {
   BarChart3,
   Headset,
   Wallet,
+  Tag,
+  FileBarChart,
 } from 'lucide-react';
-import { clearSession } from '@/lib/auth';
+import { clearSession, getStoredUser } from '@/lib/auth';
 import { api } from '@/lib/api';
 import NotificationBell from './NotificationBell';
 import GlobalSearch from './GlobalSearch';
@@ -45,6 +47,17 @@ const assetsNavLinks = [
   { href: '/movements', label: 'Movements', icon: ArrowLeftRight },
   { href: '/audits', label: 'Audits', icon: ClipboardCheck },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+];
+
+// ADMIN-only — an EMPLOYEE hitting any of these pages would just be
+// blocked by the backend's RBAC, so there's no point showing the icons.
+// EMPLOYEE still reaches /helpdesk itself via the domain switcher above,
+// which shows submit/track links instead of this admin sub-nav.
+const helpdeskNavLinks = [
+  { href: '/helpdesk', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/helpdesk/queue', label: 'Queue', icon: Headset },
+  { href: '/helpdesk/categories', label: 'Categories', icon: Tag },
+  { href: '/helpdesk/reports', label: 'Reports', icon: FileBarChart },
 ];
 
 function currentDomain(pathname: string | null): (typeof domains)[number]['key'] {
@@ -150,6 +163,20 @@ export default function AppHeader() {
               // Every notification today originates from maintenance alerts, so
               // that's the one menu that reflects the unread count for now.
               badgeCount={link.href === '/maintenance' ? unreadCount : undefined}
+            />
+          ))}
+        </nav>
+      )}
+
+      {domain === 'helpdesk' && getStoredUser()?.role === 'ADMIN' && (
+        <nav className="flex flex-col items-center gap-2">
+          {helpdeskNavLinks.map((link) => (
+            <NavIcon
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              icon={link.icon}
+              active={pathname === link.href || pathname?.startsWith(link.href + '/')}
             />
           ))}
         </nav>

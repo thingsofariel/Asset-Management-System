@@ -18,6 +18,14 @@ const config: Config = {
           repair: 'var(--color-status-repair)',
           scrap: 'var(--color-status-scrap)',
         },
+        request: {
+          open: 'var(--color-request-open)',
+          accepted: 'var(--color-accent)',
+          denied: 'var(--color-status-repair)',
+          progress: 'var(--color-request-progress)',
+          done: 'var(--color-status-good)',
+          closed: 'var(--color-muted)',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)'],

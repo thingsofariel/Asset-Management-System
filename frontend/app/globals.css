@@ -16,6 +16,12 @@
   --color-status-repair: #dc2626;
   --color-status-scrap: #6b7280;
 
+  /* Help desk request statuses — open/progress are the only two without an
+     existing asset-status color that fits; accepted/denied/done/closed reuse
+     accent/repair/good/muted since those semantics already line up. */
+  --color-request-open: #8b5cf6;
+  --color-request-progress: #2563eb;
+
   /* Tells the browser to render native widgets (date pickers, the open
      dropdown list of a <select>, scrollbars, checkboxes) in light style. */
   color-scheme: light;
@@ -38,12 +44,15 @@
   --color-status-repair: #f04444;
   --color-status-scrap: #8b93a3;
 
+  --color-request-open: #a78bfa;
+  --color-request-progress: #60a5fa;
+
   color-scheme: dark;
 }
 
 /* Base-layer defaults so every input/select/textarea follows the theme
    instead of the browser's light-mode default background+text. Wrapped in
-   @layer base so any component's own bg- /text-* utility class still wins. */
+   @layer base so any component's own bg-*/text-* utility class still wins. */
 @layer base {
   input,
   select,
