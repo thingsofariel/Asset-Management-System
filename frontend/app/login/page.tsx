@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ScanLine } from 'lucide-react';
 import { api } from '@/lib/api';
 import { saveSession } from '@/lib/auth';
@@ -9,6 +9,7 @@ import PasswordInput from '@/components/PasswordInput';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,10 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login', { email, password });
       saveSession(res.data.accessToken, res.data.user);
-      router.push('/dashboard');
+      // Honors a ?next= param (e.g. a shared payslip link at /slip/<token>
+      // sends someone here first if they aren't logged in) so they land
+      // back where they meant to go, not always on the dashboard.
+      router.push(searchParams.get('next') || '/dashboard');
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Could not sign in. Check your email and password.');
     } finally {
@@ -35,7 +39,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2 mb-1 text-primary">
           <ScanLine className="w-5 h-5 text-accent" strokeWidth={2.5} />
           <span className="font-display font-medium text-sm tracking-wide uppercase text-muted">
-            Asset & Inventory Management
+            Asset & Inventory
           </span>
         </div>
         <h1 className="font-display font-bold text-2xl text-primary mb-6">Sign in</h1>

@@ -18,6 +18,8 @@ import {
   Wallet,
   Tag,
   FileBarChart,
+  Users,
+  FileText,
 } from 'lucide-react';
 import { clearSession, getStoredUser } from '@/lib/auth';
 import { api } from '@/lib/api';
@@ -58,6 +60,13 @@ const helpdeskNavLinks = [
   { href: '/helpdesk/queue', label: 'Queue', icon: Headset },
   { href: '/helpdesk/categories', label: 'Categories', icon: Tag },
   { href: '/helpdesk/reports', label: 'Reports', icon: FileBarChart },
+];
+
+// Same reasoning as helpdeskNavLinks — ADMIN only.
+const payrollNavLinks = [
+  { href: '/payroll', label: 'Overview', icon: LayoutDashboard },
+  { href: '/payroll/employees', label: 'Employees', icon: Users },
+  { href: '/payroll/payslips', label: 'Payslips', icon: FileText },
 ];
 
 function currentDomain(pathname: string | null): (typeof domains)[number]['key'] {
@@ -171,6 +180,20 @@ export default function AppHeader() {
       {domain === 'helpdesk' && getStoredUser()?.role === 'ADMIN' && (
         <nav className="flex flex-col items-center gap-2">
           {helpdeskNavLinks.map((link) => (
+            <NavIcon
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              icon={link.icon}
+              active={pathname === link.href || pathname?.startsWith(link.href + '/')}
+            />
+          ))}
+        </nav>
+      )}
+
+      {domain === 'payroll' && getStoredUser()?.role === 'ADMIN' && (
+        <nav className="flex flex-col items-center gap-2">
+          {payrollNavLinks.map((link) => (
             <NavIcon
               key={link.href}
               href={link.href}
