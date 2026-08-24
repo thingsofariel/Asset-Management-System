@@ -1,16 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Trash2, Copy, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Trash2, Copy, Check, Camera } from 'lucide-react';
 import { api } from '@/lib/api';
 import AppHeader from '@/components/AppHeader';
 import { useToast } from '@/components/ToastProvider';
+import { getStoredUser, saveSession, StoredUser } from '@/lib/auth';
 import { Category, Location, Department, AppUser } from '@/lib/types';
 
-type Tab = 'categories' | 'locations' | 'departments' | 'users';
+type Tab = 'profile' | 'categories' | 'locations' | 'departments' | 'users';
+
+// Everyone gets Profile; the rest are admin-only management tabs the
+// backend would reject anyway for an EMPLOYEE — no point showing them.
+function tabsFor(role: string | undefined): Tab[] {
+  return role === 'ADMIN' ? ['profile', 'categories', 'locations', 'departments', 'users'] : ['profile'];
+}
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>('categories');
+  const user = getStoredUser();
+  const [tab, setTab] = useState<Tab>('profile');
+  const tabs = tabsFor(user?.role);
 
   return (
     <main className="min-h-screen bg-bg pl-20">
@@ -19,7 +28,7 @@ export default function SettingsPage() {
         <h1 className="font-display font-bold text-2xl text-primary mb-6">Settings</h1>
 
         <div className="flex gap-1 mb-6 border-b border-border">
-          {(['categories', 'locations', 'departments', 'users'] as Tab[]).map((t) => (
+          {tabs.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -32,12 +41,193 @@ export default function SettingsPage() {
           ))}
         </div>
 
+        {tab === 'profile' && <ProfileTab />}
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'locations' && <LocationsTab />}
         {tab === 'departments' && <DepartmentsTab />}
         {tab === 'users' && <UsersTab />}
       </div>
     </main>
+
+  );
+}
+
+function initialsFor(name: string | undefined): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] || '';
+  const second = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + second).toUpperCase();
+}
+
+const MAX_AVATAR_MB = 3;
+
+function ProfileTab() {
+  const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [user, setUser] = useState<StoredUser | null>(getStoredUser());
+
+  const [fullName, setFullName] = useState(user?.fullName ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  // Keeps localStorage (and therefore the rest of the app — AppHeader,
+  // etc.) in sync with whatever the backend just confirmed, since the
+  // session persists across refreshes and would otherwise go stale.
+  function syncSession(updated: StoredUser) {
+    const token = window.localStorage.getItem('accessToken');
+    if (token) saveSession(token, updated);
+    setUser(updated);
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file (PNG, JPEG, WEBP, or GIF).');
+      return;
+    }
+    if (file.size > MAX_AVATAR_MB * 1024 * 1024) {
+      toast.error(`Image is too large — max ${MAX_AVATAR_MB}MB.`);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    setAvatarUploading(true);
+    try {
+      const res = await api.post('/users/me/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      syncSession(res.data);
+      toast.success('Profile picture updated');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not upload image.');
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleProfileSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      const res = await api.patch('/users/me', { fullName, email });
+      syncSession(res.data);
+      toast.success("Saved — you're all set.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not save changes.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingPassword(true);
+    try {
+      await api.post('/auth/change-password', { currentPassword, newPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      toast.success('Password updated successfully.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not update password.');
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <div className="bg-surface border border-border rounded-lg p-5">
+        <p className="text-xs text-muted mb-4">Profile picture</p>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="group relative w-16 h-16 shrink-0 overflow-hidden rounded-full border border-border bg-primary/10 disabled:opacity-60"
+            aria-label="Change profile picture"
+          >
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="flex w-full h-full items-center justify-center text-lg font-semibold text-primary">
+                {initialsFor(user?.fullName)}
+              </span>
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
+              <Camera className="w-4 h-4 text-white" />
+            </span>
+          </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="border border-border rounded-md px-3 py-1.5 text-xs font-medium"
+            >
+              {avatarUploading ? 'Uploading…' : 'Change photo'}
+            </button>
+            <p className="text-xs text-muted mt-1.5">PNG, JPEG, WEBP, or GIF — max {MAX_AVATAR_MB}MB</p>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleAvatarChange} />
+        </div>
+      </div>
+
+      <form onSubmit={handleProfileSubmit} className="bg-surface border border-border rounded-lg p-5 space-y-3">
+        <p className="text-xs text-muted">Account details</p>
+        <input
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Full name"
+          required
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-bg"
+        />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-bg"
+        />
+        <button disabled={savingProfile} className="bg-primary text-white rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60">
+          {savingProfile ? 'Saving…' : 'Save changes'}
+        </button>
+      </form>
+
+      <form onSubmit={handlePasswordSubmit} className="bg-surface border border-border rounded-lg p-5 space-y-3">
+        <p className="text-xs text-muted">Change password</p>
+        <input
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          placeholder="Current password"
+          required
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-bg"
+        />
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="New password (8+ characters)"
+          required
+          minLength={8}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-bg"
+        />
+        <button disabled={savingPassword} className="border border-border rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60">
+          {savingPassword ? 'Updating…' : 'Update password'}
+        </button>
+      </form>
+    </div>
   );
 }
 
