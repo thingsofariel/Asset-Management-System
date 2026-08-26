@@ -11,8 +11,8 @@ export default function ReportsPage() {
   const [costs, setCosts] = useState<MaintenanceCostRow[]>([]);
 
   useEffect(() => {
-    api.get('/reports/depreciation').then((res) => setDepreciation(res.data));
-    api.get('/reports/maintenance-costs').then((res) => setCosts(res.data));
+    api.get('/assets/reports/depreciation').then((res) => setDepreciation(res.data));
+    api.get('/assets/reports/maintenance-costs').then((res) => setCosts(res.data));
   }, []);
 
   const totalBookValue = depreciation.reduce((sum, r) => sum + r.bookValue, 0);

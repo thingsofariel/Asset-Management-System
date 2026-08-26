@@ -52,7 +52,7 @@ export default function DashboardPage() {
       return;
     }
     setUser(stored);
-    api.get('/reports/dashboard-summary').then((res) => setSummary(res.data));
+    api.get('/assets/reports/dashboard-summary').then((res) => setSummary(res.data));
     api.get('/assets').then((res) => setRecentAssets(res.data.slice(0, 5)));
 
     Promise.all([
