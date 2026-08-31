@@ -1,0 +1,17 @@
+
+> asset-management-frontend@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 15.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 750ms (479 modules)
+ GET / 307 in 913ms
+ ✓ Compiled /login in 307ms (701 modules)
+ GET /login 200 in 409ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1235ms (1891 modules)

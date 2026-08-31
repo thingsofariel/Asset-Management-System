@@ -1,0 +1,8 @@
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +11ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBullModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBulkImportWorkerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBullModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBullModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13374  - [39m08/31/2026, 4:16:13 PM [32m    LOG[39m [38;5;3m[Worker] [39m[32mBulk import worker started, listening on queue: bulk-payslip-import[39m
