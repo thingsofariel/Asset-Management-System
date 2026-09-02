@@ -15,7 +15,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { getStoredUser } from '@/lib/auth';
+import { getStoredUser, StoredUser } from '@/lib/auth';
 import AppHeader from '@/components/AppHeader';
 import { Asset, DashboardSummary, MaintenanceSchedule, STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
 

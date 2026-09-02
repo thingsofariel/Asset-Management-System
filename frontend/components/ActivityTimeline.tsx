@@ -34,7 +34,7 @@ export default function ActivityTimeline({ asset }: { asset: Asset }) {
       label: MOVEMENT_LABELS[m.movementType] ?? m.movementType,
       detail:
         m.movementType === 'CHECKOUT'
-          ? m.toUser?.name
+          ? m.toUser?.fullName
           : m.movementType === 'TRANSFER'
             ? `${m.fromLocation?.room ?? '—'} → ${m.toLocation?.room ?? '—'}`
             : m.notes ?? undefined,
