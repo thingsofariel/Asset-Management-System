@@ -7,11 +7,25 @@
   - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 15.5s
+ ✓ Ready in 16.9s
  ○ Compiling / ...
- ✓ Compiled / in 750ms (479 modules)
- GET / 307 in 913ms
- ✓ Compiled /login in 307ms (701 modules)
- GET /login 200 in 409ms
+ ✓ Compiled / in 1104ms (479 modules)
+ GET / 307 in 1520ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 637ms (701 modules)
+ GET /login 200 in 751ms
  ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 1235ms (1891 modules)
+ ✓ Compiled /dashboard in 1204ms (1883 modules)
+ ✓ Compiled /assets in 449ms (1909 modules)
+ ✓ Compiled /payroll in 309ms (1925 modules)
+ ✓ Compiled /payroll/employees in 437ms (1939 modules)
+ ✓ Compiled /_not-found in 277ms (1942 modules)
+ GET /accept-invite?token=27172e4f333c6d69fff1e1d1abbf05b279dafd1c3631c7cbc13703f5ccf45d96 404 in 347ms
+ ✓ Compiled in 2.3s (938 modules)
+ ✓ Compiled /_not-found in 264ms (1930 modules)
+ GET /accept-invite?token=27172e4f333c6d69fff1e1d1abbf05b279dafd1c3631c7cbc13703f5ccf45d96 404 in 42ms
+ ○ Compiling /accept-invite ...
+ ✓ Compiled /accept-invite in 1868ms (1940 modules)
+ ✓ Compiled in 432ms (1951 modules)
+ ○ Compiling /payroll/payslips ...
+ ✓ Compiled /payroll/payslips in 511ms (1951 modules)
