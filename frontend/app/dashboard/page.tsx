@@ -39,7 +39,7 @@ const CHART_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentAssets, setRecentAssets] = useState<Asset[]>([]);
   const [damagedAssets, setDamagedAssets] = useState<Asset[]>([]);
